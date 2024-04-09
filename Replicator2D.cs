@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ReplicatorLib
 {
@@ -27,15 +28,15 @@ namespace ReplicatorLib
             var analysis = new TilingAnalysis<T>(inputArray);
             return new Replicator2D<T>(space, analysis, rng ?? new Random());
         }
-        protected override List<List<T>> ConvertOutput(MultiArray<T> outputArray)
+        protected override List<List<T>> ConvertOutput(MultiArray<WaveNode<T>> output)
         {
-            var superList = new List<List<T>>(outputArray.Space.Ranges[0]);
-            for (int x = 0; x < outputArray.Space.Ranges[0]; x++)
+            var superList = new List<List<T>>(output.Space.Ranges[0]);
+            for (int x = 0; x < output.Space.Ranges[0]; x++)
             {
-                var subList = new List<T>(outputArray.Space.Ranges[1]);
-                for (int y = 0; y < outputArray.Space.Ranges[1]; y++)
+                var subList = new List<T>(output.Space.Ranges[1]);
+                for (int y = 0; y < output.Space.Ranges[1]; y++)
                 {
-                    subList.Add(outputArray.GetValueUnchecked(new MultiVector(x, y)));
+                    subList.Add(output.GetValueUnchecked(new MultiVector(x, y)).PossibleTiles.First().Key);
                 }
                 superList.Add(subList);
             }

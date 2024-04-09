@@ -28,9 +28,9 @@ namespace ReplicatorLib
             var analysis = new TilingAnalysis<T>(inputArray);
             return new Replicator1D<T>(space, analysis, rng ?? new Random());
         }
-        protected override List<T> ConvertOutput(MultiArray<T> outputArray)
+        protected override List<T> ConvertOutput(MultiArray<WaveNode<T>> output)
         {
-            return outputArray.ToList();
+            return output.Select(node => node.PossibleTiles.First().Key).ToList();
         }
     }
 }

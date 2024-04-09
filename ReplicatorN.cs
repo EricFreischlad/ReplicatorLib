@@ -35,8 +35,8 @@ namespace ReplicatorLib
             return false;
         }
         /// <summary>
-        /// Convert a multi-dimensional output to the type defined in the concrete subclass.
+        /// Convert a the multi-dimensional output wave nodes to the type defined in the concrete subclass. This is only called if the function was successful.
         /// </summary>
-        protected abstract TOutput ConvertOutput(MultiArray<T> outputArray);
+        protected abstract TOutput ConvertOutput(MultiArray<WaveNode<T>> output);
     }
 }

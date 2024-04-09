@@ -67,9 +67,9 @@ namespace ReplicatorLib
         /// <summary>
         /// Remove a possibile tile from this node. Emits true if there are no longer any possible tiles at this location and the wave function cannot resolve.
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
         public void RemovePossibleTile(T tile, out bool isUnresolveable)
         {
+            // Silently ignore the removal of a possibile tile if it was already impossible.
             if (_possibleTiles.TryGetValue(tile, out var _))
             {
                 _possibleTiles.Remove(tile);
@@ -90,7 +90,7 @@ namespace ReplicatorLib
             }
             else
             {
-                throw new System.ArgumentException($"Unrecognized tile \"{tile}\".", nameof(tile));
+                isUnresolveable = _possibleTiles.Count == 0;
             }
         }
     }

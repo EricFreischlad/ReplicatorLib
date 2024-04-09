@@ -13,9 +13,6 @@ namespace ReplicatorLib
         // The flat list actually containing the items.
         private readonly List<T> _flatList;
 
-        // Pre-calculated combined ranges of each dimension and higher dimensions. Used for calculating point indexes.
-        private readonly MultiVector _combinedRanges;
-
         /// <inheritdoc cref="IReadOnlyMultiCollection{T}.Space"/>
         public MultiSpace Space { get; }
 
@@ -23,8 +20,6 @@ namespace ReplicatorLib
         {
             Space = space;
             _flatList = flatList;
-
-            _combinedRanges = CalculateCombinedRanges();
         }
         /// <summary>
         /// Create a new MultiArray with all values initialized to the type default.
@@ -85,7 +80,7 @@ namespace ReplicatorLib
         /// <inheritdoc cref="IMultiCollection{T}.SetValueUnchecked(MultiVector, T)"/>
         public void SetValueUnchecked(MultiVector coordinates, T value)
         {
-            int pointIndex = GetPointIndexUnchecked(coordinates);
+            int pointIndex = Space.GetPointIndexUnchecked(coordinates);
             _flatList[pointIndex] = value;
         }
         /// <inheritdoc cref="IMultiCollection{T}.TrySetValue(MultiVector, T)"/>
@@ -101,7 +96,7 @@ namespace ReplicatorLib
         /// <inheritdoc cref="IReadOnlyMultiCollection{T}.GetValueUnchecked(MultiVector)"/>
         public T GetValueUnchecked(MultiVector coordinates)
         {
-            return _flatList[GetPointIndexUnchecked(coordinates)];
+            return _flatList[Space.GetPointIndexUnchecked(coordinates)];
         }
         /// <inheritdoc cref="IReadOnlyMultiCollection{T}.TryGetValue(MultiVector, out T)"/>
         public bool TryGetValue(MultiVector coordinates, out T value)
@@ -115,51 +110,17 @@ namespace ReplicatorLib
             value = default!;
             return false;
         }
-        private int GetPointIndexUnchecked(MultiVector coordinates)
-        {
-            int pointIndex = 0;
-            for (int dimIndex = 0; dimIndex < Space.DimensionCount; dimIndex++)
-            {
-                pointIndex += _combinedRanges[dimIndex] * coordinates[dimIndex];
-            }
-            return pointIndex;
-        }
-        private MultiVector GetCoordinatesUnchecked(int pointIndex)
-        {
-            int[] coordinates = new int[Space.DimensionCount];
-            for (int dimIndex = 0; dimIndex < Space.DimensionCount; dimIndex++)
-            {
-                int range = _combinedRanges[dimIndex];
-                coordinates[dimIndex] = pointIndex / range;
-                pointIndex %= range;
-            }
-            return new MultiVector(coordinates);
-        }
-        private MultiVector CalculateCombinedRanges()
-        {
-            int[] combinedRanges = new int[Space.DimensionCount];
-            int runningMultiplier = 1;
-            for (int dimIndex = Space.DimensionCount - 1; dimIndex >= 0; dimIndex--)
-            {
-                combinedRanges[dimIndex] = runningMultiplier;
-                runningMultiplier *= Space.Ranges[dimIndex];
-            }
-            return new MultiVector(combinedRanges);
-        }
         public IEnumerable<(T Value, MultiVector Coordinates)> EnumeratePointsWithCoordinates()
         {
             for (int i = 0; i < _flatList.Count; i++)
             {
-                yield return (_flatList[i], GetCoordinatesUnchecked(i));
+                yield return (_flatList[i], Space.GetCoordinatesUnchecked(i));
             }
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            foreach (var coords in Space.EnumeratePoints())
-            {
-                yield return GetValueUnchecked(coords);
-            }
+            return _flatList.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

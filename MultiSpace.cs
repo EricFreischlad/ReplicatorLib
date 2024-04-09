@@ -9,6 +9,9 @@ namespace ReplicatorLib
     /// </summary>
     public class MultiSpace
     {
+        // Pre-calculated combined ranges of each dimension and higher dimensions. Used for calculating point indexes.
+        private readonly MultiVector _combinedRanges;
+
         /// <summary>
         /// The minimum extents of the space.
         /// </summary>
@@ -26,6 +29,7 @@ namespace ReplicatorLib
         /// The total range in each dimension. That is, the length, width, height, etc...
         /// </summary>
         public MultiVector Ranges { get; }
+        
         /// <summary>
         /// The total number of unit points in the space. A.k.a. the length, the area, the volume, etc... The product of the ranges of each dimension.
         /// </summary>
@@ -60,6 +64,7 @@ namespace ReplicatorLib
             PeriodicityByDimension = periodicityByDimension.ToArray();
 
             Ranges = CalculateRanges();
+            _combinedRanges = CalculateCombinedRanges();
             PointCount = CountPoints();
         }
         // For if you like it the other way.
@@ -115,6 +120,26 @@ namespace ReplicatorLib
             }
             return new MultiVector(simplifiedCoordinates);
         }
+        public int GetPointIndexUnchecked(MultiVector coordinates)
+        {
+            int pointIndex = 0;
+            for (int dimIndex = 0; dimIndex < DimensionCount; dimIndex++)
+            {
+                pointIndex += _combinedRanges[dimIndex] * coordinates[dimIndex];
+            }
+            return pointIndex;
+        }
+        public MultiVector GetCoordinatesUnchecked(int pointIndex)
+        {
+            int[] coordinates = new int[DimensionCount];
+            for (int dimIndex = 0; dimIndex < DimensionCount; dimIndex++)
+            {
+                int range = _combinedRanges[dimIndex];
+                coordinates[dimIndex] = pointIndex / range;
+                pointIndex %= range;
+            }
+            return new MultiVector(coordinates);
+        }
         /// <summary>
         /// Enumerate the points of the space, in order of highest dimension (last coordinate) to lowest (first coordinate).
         /// </summary>
@@ -155,6 +180,17 @@ namespace ReplicatorLib
                 ranges[dimIndex] = Math.Abs(MaxValues[dimIndex] - MinValues[dimIndex] + 1);
             }
             return new MultiVector(ranges);
+        }
+        private MultiVector CalculateCombinedRanges()
+        {
+            int[] combinedRanges = new int[DimensionCount];
+            int runningMultiplier = 1;
+            for (int dimIndex = DimensionCount - 1; dimIndex >= 0; dimIndex--)
+            {
+                combinedRanges[dimIndex] = runningMultiplier;
+                runningMultiplier *= Ranges[dimIndex];
+            }
+            return new MultiVector(combinedRanges);
         }
         private int CountPoints()
         {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ReplicatorLib
 {
@@ -26,7 +27,7 @@ namespace ReplicatorLib
         {
             if (Space.IsInBounds(coordinates))
             {
-                // Assume all values not yet in the dict are at default value.
+                // Assume all values not yet in the dict are at default value (NULL).
                 _internalDict.TryGetValue(coordinates, out value);
                 return true;
             }
@@ -51,7 +52,14 @@ namespace ReplicatorLib
             {
                 throw new ArgumentOutOfRangeException($"The number of dimensions in the provided coordinates did not match the space.", nameof(coordinates));
             }
-            _internalDict[coordinates] = value;
+            if (value == default(T))
+            {
+                RemoveValue(coordinates);
+            }
+            else
+            {
+                _internalDict[coordinates] = value;
+            }
         }
         /// <inheritdoc cref="IMultiCollection{T}.TrySetValue(MultiVector, T)"/>
         public bool TrySetValue(MultiVector coordinates, T value)
@@ -63,17 +71,29 @@ namespace ReplicatorLib
             }
             return false;
         }
-
+        public void RemoveValue(MultiVector coordinates)
+        {
+            _internalDict.Remove(coordinates);
+        }
+        /// <summary>
+        /// Enumerate only the points with non-default values.
+        /// </summary>
+        public IEnumerable<(MultiVector, T)> EnumerateNonDefaultPoints()
+        {
+            return _internalDict.OrderBy(kvp => Space.GetPointIndexUnchecked(kvp.Key)).Select(kvp => (kvp.Key, kvp.Value));
+        }
+        /// <summary>
+        /// Enumerate all points, substituting NULL for all values not explicitly defined in the internal dictionary.
+        /// </summary>
         public IEnumerator<T> GetEnumerator()
         {
             foreach (var coords in Space.EnumeratePoints())
             {
-                // NOTE: TryGetValue will emit default(T) if not found, which is also what we want to return.
+                // NOTE: TryGetValue will emit NULL if not found, which is also what we want to return.
                 _internalDict.TryGetValue(coords, out var value);
                 yield return value;
             }
         }
-
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
