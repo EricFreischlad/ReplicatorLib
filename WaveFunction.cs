@@ -4,14 +4,29 @@ using System.Linq;
 
 namespace ReplicatorLib
 {
+    /// <summary>
+    /// The core function for procedural generation. An implementation of the Wave Function Collapse algorithm working in N-dimensional spaces. Iteratively collapses possibilities for every point in a given space until all points have a single possibility or the function reaches an unresolveable state.
+    /// </summary>
     public sealed class WaveFunction<T>
     {
         public MultiSpace Space { get; }
         public TilingAnalysis<T> TilingAnalysis { get; }
 
+        /// <summary>
+        /// Create a new wave function using the given output space and tiling analysis.
+        /// </summary>
+        /// <param name="space">the definition for the output space. if the wave function operates on a 4x4 grid, then this is the definition of that grid</param>
+        /// <param name="tilingAnalysis">the analysis that will be used to tile the output space. this can be from observing an input, or manually defined</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         public WaveFunction(MultiSpace space, TilingAnalysis<T> tilingAnalysis)
         {
             Space = space ?? throw new ArgumentNullException(nameof(space));
+
+            if (tilingAnalysis == null)
+            {
+                throw new ArgumentNullException(nameof(tilingAnalysis));
+            }
 
             if (tilingAnalysis.DirectionSpace.DimensionCount != space.DimensionCount)
             {
@@ -20,6 +35,12 @@ namespace ReplicatorLib
             TilingAnalysis = tilingAnalysis;
         }
 
+        /// <summary>
+        /// Runs the function to generate a new output. Returns true if the function completed successfully and emits the output. Returns false if the algorithm reached an unresolveable state (this is only possible with errant manually-created tiling analysis).
+        /// </summary>
+        /// <param name="rng">the random number generator used by the algorithm</param>
+        /// <param name="output">the procedurally-generated output of the function, when returning true. NULL when returning false</param>
+        /// <returns></returns>
         public bool TryRun(Random rng, out MultiArray<T>? output)
         {
             // Set up prefab node.

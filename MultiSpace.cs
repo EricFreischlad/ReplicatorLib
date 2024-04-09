@@ -32,7 +32,7 @@ namespace ReplicatorLib
         public int PointCount { get; }
 
         /// <summary>
-        /// Holds a value telling whether or not the dimension at that index is periodic (loops from the end back to the beginning).
+        /// Holds a value telling whether or not the dimension at that index is periodic (loops from the end back to the beginning). If a dimension is periodic, no value is considered out of bounds.
         /// </summary>
         public IReadOnlyList<bool> PeriodicityByDimension { get; }
 
@@ -129,10 +129,9 @@ namespace ReplicatorLib
         // Recursive.
         private IEnumerable<MultiVector> EnumeratePoints_Internal(int[] workingCoords, int dimIndex)
         {
+            // If the dimension index exceeds the dimension count, then we've reached the bottom of the nested loop structure.
             if (dimIndex >= DimensionCount)
             {
-                
-
                 // Do the thing.
                 yield return new MultiVector(workingCoords);
             }

@@ -4,15 +4,27 @@ using System.Linq;
 
 namespace ReplicatorLib
 {
+    /// <summary>
+    /// A single node in a wave function. Manages all possibilities for a given point in the function's ouput space.
+    /// </summary>
     public sealed class WaveNode<T>
     {
+        // A quick handle to the tiling analysis for the parent wave function.
         private readonly TilingAnalysis<T> _analysis;
 
-        // Tile ID -> tile enablement.
         private readonly Dictionary<T, TileEnablement> _possibleTiles;
+        /// <summary>
+        /// A dictionary of all possible tiles and their enablement from all directions.
+        /// </summary>
         public IReadOnlyDictionary<T, TileEnablement> PossibleTiles => _possibleTiles;
 
-        public TileWeight CurrentTotalWeights { get; private set; }
+        /// <summary>
+        /// The current sum total of the weights of all possible tiles for this node.
+        /// </summary>
+        public TileWeight CurrentTotalWeight { get; private set; }
+        /// <summary>
+        /// The current total Shannon entropy for this node.
+        /// </summary>
         public double CurrentTotalEntropy { get; private set; }
 
         public WaveNode(TilingAnalysis<T> tilingAnalysis)
@@ -20,7 +32,7 @@ namespace ReplicatorLib
             _analysis = tilingAnalysis;
             _possibleTiles = InitializePossibleTiles(tilingAnalysis);
 
-            CurrentTotalWeights = tilingAnalysis.TotalWeight;
+            CurrentTotalWeight = tilingAnalysis.TotalWeight;
             CurrentTotalEntropy = tilingAnalysis.MaxEntropy;
         }
         public WaveNode(WaveNode<T> other)
@@ -28,7 +40,7 @@ namespace ReplicatorLib
             _analysis = other._analysis;
             _possibleTiles = new Dictionary<T, TileEnablement>(other._possibleTiles.Select((kvp => new KeyValuePair<T, TileEnablement>(kvp.Key, new TileEnablement(kvp.Value)))));
 
-            CurrentTotalWeights = other.CurrentTotalWeights;
+            CurrentTotalWeight = other.CurrentTotalWeight;
             CurrentTotalEntropy = other.CurrentTotalEntropy;
         }
         private static Dictionary<T, TileEnablement> InitializePossibleTiles(TilingAnalysis<T> tilingAnalysis)
@@ -52,7 +64,10 @@ namespace ReplicatorLib
             return dict;
         }
 
-        // Emits true if there are no longer any possible tiles at this location and the wave function cannot resolve.
+        /// <summary>
+        /// Remove a possibile tile from this node. Emits true if there are no longer any possible tiles at this location and the wave function cannot resolve.
+        /// </summary>
+        /// <exception cref="System.ArgumentException"></exception>
         public void RemovePossibleTile(T tile, out bool isUnresolveable)
         {
             if (_possibleTiles.TryGetValue(tile, out var _))
@@ -70,8 +85,8 @@ namespace ReplicatorLib
                 var weightsOfRemovedTile = _analysis.Weights[tile];
 
                 // Update pre-calculated math.
-                CurrentTotalWeights = new TileWeight(CurrentTotalWeights.Weight - weightsOfRemovedTile.Weight, CurrentTotalWeights.WeightLogWeight - weightsOfRemovedTile.WeightLogWeight);
-                CurrentTotalEntropy = MathFunctions.GetEntropy(CurrentTotalWeights);
+                CurrentTotalWeight = new TileWeight(CurrentTotalWeight.Weight - weightsOfRemovedTile.Weight, CurrentTotalWeight.WeightLogWeight - weightsOfRemovedTile.WeightLogWeight);
+                CurrentTotalEntropy = MathFunctions.GetEntropy(CurrentTotalWeight);
             }
             else
             {

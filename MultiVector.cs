@@ -5,21 +5,39 @@ using System.Text;
 
 namespace ReplicatorLib
 {
-    // A vector of arbitrary size. Used as a set of coordinates for an N-dimensional space.
+    /// <summary>
+    /// A vector of arbitrary size. Used as a set of coordinates for an N-dimensional space.
+    /// </summary>
     public class MultiVector : IReadOnlyList<int>, IEquatable<MultiVector>
     {
+        /// <summary>
+        /// The coordinate values in order of dimension (first dimension in index 0).
+        /// </summary>
         public IReadOnlyList<int> Values { get; }
         public int DimensionCount => Values.Count;
 
         public MultiVector(IReadOnlyList<int> values)
         {
+            if (values is null || values.Count == 0)
+            {
+                throw new ArgumentException($"Argument was NULL or empty. A multi-dimensional vector must be at least one-dimensional.", nameof(values));
+            }
+            
             Values = values.ToArray();
         }
         public MultiVector(params int[] values)
             :this((IReadOnlyList<int>)values)
         { }
+        /// <summary>
+        /// Returns a new MultiVector with a value of 0 for every dimension.
+        /// </summary>
         public static MultiVector Zero(int dimensionCount)
         {
+            if (dimensionCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dimensionCount));
+            }
+            
             int[] vec = new int[dimensionCount];
             for (int i = 0; i < dimensionCount; i++)
             {
@@ -27,12 +45,16 @@ namespace ReplicatorLib
             }
             return new MultiVector(vec);
         }
+        /// <summary>
+        /// Returns true if all values in the vector are zero (the point is at origin).
+        /// </summary>
         public bool IsZero()
         {
             return Values.All(x => x == 0);
         }
         public override string ToString()
         {
+            // Example: (0, 3, 16)
             StringBuilder sb = new StringBuilder("(");
             sb.Append(Values.First());
             foreach (int value in Values.Skip(1))
